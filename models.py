@@ -41,14 +41,14 @@ class Expense(db.Model):
 
 class Budget(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    category = db.Column(db.String(100), nullable=False)
-    monthly_limit = db.Column(db.Float, nullable=False)
+    category = db.Column(db.String(64), nullable=False)
+    limit_amount = db.Column(db.Float, nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
-    user = db.relationship('User', backref=db.backref('budgets', lazy=True, cascade='all, delete-orphan'))
-    
+
     def __repr__(self):
-        return f'<Budget {self.category}: ${self.monthly_limit}>'
+        return f'<Budget {self.category} - {self.limit_amount}>'
 
 
 class Reminder(db.Model):

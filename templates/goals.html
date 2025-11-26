@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Goals - Expense Tracker{% endblock %}
+
+{% block content %}
+<div>
+    <div class="flex items-center justify-between mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Savings Goals</h1>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Create Goal</h2>
+                
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Goal Name</label>
+                            {{ form.name(class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors", placeholder="e.g., Vacation Fund") }}
+                            {% for error in form.name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        
+                        <div>
+                            <label for="target_amount" class="block text-sm font-medium text-gray-700 mb-2">Target Amount ($)</label>
+                            {{ form.target_amount(class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors", placeholder="0.00", step="0.01") }}
+                            {% for error in form.target_amount.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        
+                        <div>
+                            <label for="current_amount" class="block text-sm font-medium text-gray-700 mb-2">Current Amount ($)</label>
+                            {{ form.current_amount(class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors", placeholder="0.00", step="0.01") }}
+                            {% for error in form.current_amount.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        
+                        <div>
+                            <label for="due_date" class="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
+                            {{ form.due_date(class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors") }}
+                            {% for error in form.due_date.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        
+                        <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                            Create Goal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2">
+            {% if goals_data %}
+            <div class="space-y-4">
+                {% for item in goals_data %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">{{ item.goal.name }}</h3>
+                            <p class="text-sm text-gray-500">Target: {{ item.goal.due_date.strftime('%B %d, %Y') }}</p>
+                        </div>
+                        <form action="{{ url_for('delete_goal', id=item.goal.id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this goal?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="p-2 text-gray-400 hover:text-red-600 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-gray-600">Progress</span>
+                            <span class="font-mono font-semibold text-gray-900">
+                                ${{ "%.2f"|format(item.goal.current_amount) }} / ${{ "%.2f"|format(item.goal.target_amount) }}
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-4">
+                            <div class="h-4 rounded-full transition-all duration-300 bg-green-500" 
+                                 style="width: {{ item.progress }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-green-600 font-medium">
+                            {% if item.progress >= 100 %}
+                            Goal completed! 🎉
+                            {% else %}
+                            ${{ "%.2f"|format(item.remaining) }} to go
+                            {% endif %}
+                        </span>
+                        <span class="text-gray-500">{{ "%.0f"|format(item.progress) }}%</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">No goals yet</h3>
+                <p class="text-gray-500">Create a savings goal to stay motivated and track your progress.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

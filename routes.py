@@ -2,8 +2,9 @@ from datetime import date
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db
-from models import User, Expense, Budget
-from forms import LoginForm, RegistrationForm, ExpenseForm, ExpenseFilterForm, BudgetForm
+from models import User, Expense, Budget, Reminder, Goal
+from forms import LoginForm, RegistrationForm, ExpenseForm, ExpenseFilterForm, BudgetForm, ReminderForm, GoalForm
+from sqlalchemy import func, extract
 
 
 @app.route('/')
@@ -332,81 +333,46 @@ def export_csv():
     )
 
 
-@app.route('/budgets')
+@app.route('/budgets', methods=['GET', 'POST'])
 @login_required
 def budgets():
-    user_budgets = Budget.query.filter_by(user_id=current_user.id).all()
-    
-    budget_data = []
-    current_month = date.today().replace(day=1)
-    
-    for budget in user_budgets:
-        from sqlalchemy import func, extract
-        current_spending = db.session.query(func.coalesce(func.sum(Expense.amount), 0)).filter(
-            Expense.user_id == current_user.id,
-            Expense.category == budget.category,
-            extract('month', Expense.date) == current_month.month,
-            extract('year', Expense.date) == current_month.year
-        ).scalar()
-        
-        percentage = (current_spending / budget.monthly_limit * 100) if budget.monthly_limit > 0 else 0
-        
-        budget_data.append({
-            'budget': budget,
-            'spent': current_spending,
-            'remaining': max(0, budget.monthly_limit - current_spending),
-            'percentage': min(100, percentage),
-            'over_budget': current_spending > budget.monthly_limit
-        })
-    
-    return render_template('budgets.html', budget_data=budget_data)
-
-
-@app.route('/budget/add', methods=['GET', 'POST'])
-@login_required
-def add_budget():
     form = BudgetForm()
+    
     if form.validate_on_submit():
-        existing = Budget.query.filter_by(
-            user_id=current_user.id,
-            category=form.category.data
-        ).first()
-        
-        if existing:
-            flash('A budget for this category already exists. Edit it instead.', 'warning')
-            return redirect(url_for('budgets'))
-        
         budget = Budget(
             category=form.category.data,
-            monthly_limit=form.monthly_limit.data,
+            limit_amount=form.limit_amount.data,
+            start_date=form.start_date.data,
+            end_date=form.end_date.data,
             user_id=current_user.id
         )
         db.session.add(budget)
         db.session.commit()
-        flash('Budget added successfully!', 'success')
+        flash('Budget created successfully!', 'success')
         return redirect(url_for('budgets'))
     
-    return render_template('budget_form.html', form=form, title='Add Budget')
-
-
-@app.route('/budget/edit/<int:id>', methods=['GET', 'POST'])
-@login_required
-def edit_budget(id):
-    budget = Budget.query.get_or_404(id)
+    user_budgets = Budget.query.filter_by(user_id=current_user.id).order_by(Budget.start_date.desc()).all()
     
-    if budget.user_id != current_user.id:
-        flash('You do not have permission to edit this budget.', 'danger')
-        return redirect(url_for('budgets'))
+    budgets_data = []
     
-    form = BudgetForm(obj=budget)
-    if form.validate_on_submit():
-        budget.category = form.category.data
-        budget.monthly_limit = form.monthly_limit.data
-        db.session.commit()
-        flash('Budget updated successfully!', 'success')
-        return redirect(url_for('budgets'))
+    for budget in user_budgets:
+        spent_amount = db.session.query(func.sum(Expense.amount)).filter(
+            Expense.user_id == current_user.id,
+            Expense.category == budget.category,
+            Expense.date >= budget.start_date,
+            Expense.date <= budget.end_date
+        ).scalar() or 0.0
+        
+        remaining = budget.limit_amount - spent_amount
+        
+        budgets_data.append({
+            'budget': budget,
+            'spent': spent_amount,
+            'remaining': remaining,
+            'progress_percent': min(100, (spent_amount / budget.limit_amount) * 100)
+        })
     
-    return render_template('budget_form.html', form=form, title='Edit Budget')
+    return render_template('budgets.html', budgets_data=budgets_data, form=form)
 
 
 @app.route('/budget/delete/<int:id>', methods=['POST'])
@@ -422,3 +388,87 @@ def delete_budget(id):
     db.session.commit()
     flash('Budget deleted successfully!', 'success')
     return redirect(url_for('budgets'))
+
+
+@app.route('/reminders', methods=['GET', 'POST'])
+@login_required
+def reminders():
+    form = ReminderForm()
+    
+    if form.validate_on_submit():
+        reminder = Reminder(
+            bill_name=form.bill_name.data,
+            due_date=form.due_date.data,
+            amount=form.amount.data,
+            user_id=current_user.id
+        )
+        db.session.add(reminder)
+        db.session.commit()
+        flash('Reminder added successfully!', 'success')
+        return redirect(url_for('reminders'))
+    
+    user_reminders = Reminder.query.filter_by(user_id=current_user.id).order_by(Reminder.due_date.asc()).all()
+    
+    return render_template('reminders.html', reminders=user_reminders, form=form)
+
+
+@app.route('/reminder/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_reminder(id):
+    reminder = Reminder.query.get_or_404(id)
+    
+    if reminder.user_id != current_user.id:
+        flash('You do not have permission to delete this reminder.', 'danger')
+        return redirect(url_for('reminders'))
+    
+    db.session.delete(reminder)
+    db.session.commit()
+    flash('Reminder deleted successfully!', 'success')
+    return redirect(url_for('reminders'))
+
+
+@app.route('/goals', methods=['GET', 'POST'])
+@login_required
+def goals():
+    form = GoalForm()
+    
+    if form.validate_on_submit():
+        goal = Goal(
+            name=form.name.data,
+            target_amount=form.target_amount.data,
+            current_amount=form.current_amount.data,
+            due_date=form.due_date.data,
+            user_id=current_user.id
+        )
+        db.session.add(goal)
+        db.session.commit()
+        flash('Goal created successfully!', 'success')
+        return redirect(url_for('goals'))
+    
+    user_goals = Goal.query.filter_by(user_id=current_user.id).order_by(Goal.due_date.asc()).all()
+    
+    goals_data = []
+    for goal in user_goals:
+        progress = (goal.current_amount / goal.target_amount * 100) if goal.target_amount > 0 else 0
+        goals_data.append({
+            'goal': goal,
+            'progress': min(100, progress),
+            'remaining': max(0, goal.target_amount - goal.current_amount)
+        })
+    
+    return render_template('goals.html', goals_data=goals_data, form=form)
+
+
+@app.route('/goal/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_goal(id):
+    goal = Goal.query.get_or_404(id)
+    
+    if goal.user_id != current_user.id:
+        flash('You do not have permission to delete this goal.', 'danger')
+        return redirect(url_for('goals'))
+    
+    db.session.delete(goal)
+    db.session.commit()
+    flash('Goal deleted successfully!', 'success')
+    return redirect(url_for('goals'))

@@ -62,8 +62,10 @@ class ExpenseFilterForm(FlaskForm):
 
 class BudgetForm(FlaskForm):
     category = SelectField('Category', choices=EXPENSE_CATEGORIES[1:], validators=[DataRequired()])
-    monthly_limit = FloatField('Monthly Limit ($)', validators=[DataRequired(), NumberRange(min=0.01, message='Limit must be greater than 0')])
-    submit = SubmitField('Save Budget')
+    limit_amount = FloatField('Limit Amount ($)', validators=[DataRequired(), NumberRange(min=0.01, message='Limit must be greater than 0')])
+    start_date = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()])
+    end_date = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()])
+    submit = SubmitField('Set Budget')
 
 
 class ReminderForm(FlaskForm):

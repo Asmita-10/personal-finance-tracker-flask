@@ -1,0 +1,55 @@
+# BUDGETING FEATURES - ADD THIS CODE
+
+# You will need to define this form in forms.py if the AI didn't:
+# class BudgetForm(FlaskForm):
+#     category = SelectField('Category', choices=[...])
+#     limit_amount = FloatField('Limit', validators=[DataRequired()])
+#     start_date = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()])
+#     end_date = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()])
+#     submit = SubmitField('Set Budget')
+
+@app.route('/budgets', methods=['GET', 'POST'])
+@login_required
+def budgets():
+    # Use the form you defined in forms.py
+    form = BudgetForm() 
+
+    if form.validate_on_submit():
+        budget = Budget(
+            category=form.category.data,
+            limit_amount=form.limit_amount.data,
+            start_date=form.start_date.data,
+            end_date=form.end_date.data,
+            user_id=current_user.id
+        )
+        db.session.add(budget)
+        db.session.commit()
+        flash('Budget created successfully!', 'success')
+        return redirect(url_for('budgets'))
+
+    # Fetch all budgets for the current user
+    user_budgets = Budget.query.filter_by(user_id=current_user.id).order_by(Budget.start_date.desc()).all()
+    
+    budgets_data = []
+
+    # Loop through each budget to calculate spending
+    for budget in user_budgets:
+        # COMPLEX CALCULATION: Sum expenses within the budget's time frame
+        spent_amount = db.session.query(func.sum(Expense.amount)).filter(
+            Expense.user_id == current_user.id,
+            Expense.category == budget.category,
+            Expense.date >= budget.start_date,
+            Expense.date <= budget.end_date
+        ).scalar() or 0.0 # <--- FIX for Internal Server Error when sum is NULL
+
+        remaining = budget.limit_amount - spent_amount
+        
+        budgets_data.append({
+            'budget': budget,
+            'spent': spent_amount,
+            'remaining': remaining,
+            # Calculate a percentage for visualization (e.g., for a progress bar)
+            'progress_percent': min(100, (spent_amount / budget.limit_amount) * 100)
+        })
+
+    return render_template('budgets.html', budgets_data=budgets_data, form=form)
