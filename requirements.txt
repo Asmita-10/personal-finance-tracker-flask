@@ -1,0 +1,8 @@
+Flask==3.0.0
+Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
+psycopg2-binary==2.9.9       # PostgreSQL driver
+gunicorn==22.0.0           # Required for Render deployment
+# If the AI used other tools, you may need these too:
+# Flask-WTF
+# SQLAlchemy
