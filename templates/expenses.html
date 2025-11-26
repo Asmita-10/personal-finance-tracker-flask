@@ -6,12 +6,75 @@
 <div>
     <div class="flex items-center justify-between mb-8">
         <h1 class="text-3xl font-bold text-gray-900">Expenses</h1>
-        <a href="{{ url_for('add_expense') }}" class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('export_csv', category=request.args.get('category', ''), date_from=request.args.get('date_from', ''), date_to=request.args.get('date_to', ''), min_amount=request.args.get('min_amount', ''), max_amount=request.args.get('max_amount', ''), search=request.args.get('search', '')) }}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Export CSV
+            </a>
+            <a href="{{ url_for('add_expense') }}" class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Add Expense
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+        <button id="filter-toggle" class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+                <span class="font-medium text-gray-700">Filter & Search</span>
+                {% if has_filters %}
+                    <span class="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">Active</span>
+                {% endif %}
+            </div>
+            <svg id="filter-icon" class="w-5 h-5 text-gray-400 transition-transform {% if has_filters %}rotate-180{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
-            Add Expense
-        </a>
+        </button>
+        
+        <div id="filter-panel" class="border-t border-gray-100 {% if not has_filters %}hidden{% endif %}">
+            <form method="GET" action="{{ url_for('expenses') }}" class="p-6">
+                {{ form.hidden_tag() }}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                        {{ form.category(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white") }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                        {{ form.date_from(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none") }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+                        {{ form.date_to(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none") }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Min Amount ($)</label>
+                        {{ form.min_amount(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none", placeholder="0.00", step="0.01") }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Max Amount ($)</label>
+                        {{ form.max_amount(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none", placeholder="0.00", step="0.01") }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Search Description</label>
+                        {{ form.search(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none", placeholder="Search...") }}
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-3 mt-4">
+                    <a href="{{ url_for('expenses') }}" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Clear Filters</a>
+                    <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                        Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100">
@@ -82,13 +145,13 @@
             {% if expenses.pages > 1 %}
                 <div class="p-4 border-t border-gray-100 flex items-center justify-center gap-2">
                     {% if expenses.has_prev %}
-                        <a href="{{ url_for('expenses', page=expenses.prev_num) }}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Previous</a>
+                        <a href="{{ url_for('expenses', page=expenses.prev_num, category=request.args.get('category', ''), date_from=request.args.get('date_from', ''), date_to=request.args.get('date_to', ''), min_amount=request.args.get('min_amount', ''), max_amount=request.args.get('max_amount', ''), search=request.args.get('search', '')) }}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Previous</a>
                     {% endif %}
                     
                     <span class="px-4 py-2 text-sm text-gray-600">Page {{ expenses.page }} of {{ expenses.pages }}</span>
                     
                     {% if expenses.has_next %}
-                        <a href="{{ url_for('expenses', page=expenses.next_num) }}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Next</a>
+                        <a href="{{ url_for('expenses', page=expenses.next_num, category=request.args.get('category', ''), date_from=request.args.get('date_from', ''), date_to=request.args.get('date_to', ''), min_amount=request.args.get('min_amount', ''), max_amount=request.args.get('max_amount', ''), search=request.args.get('search', '')) }}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Next</a>
                     {% endif %}
                 </div>
             {% endif %}
@@ -99,13 +162,32 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                 </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-1">No expenses yet</h3>
-                <p class="text-gray-500 mb-4">Start tracking your spending by adding your first expense.</p>
-                <a href="{{ url_for('add_expense') }}" class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
-                    Add Your First Expense
-                </a>
+                {% if has_filters %}
+                    <h3 class="text-lg font-medium text-gray-900 mb-1">No expenses match your filters</h3>
+                    <p class="text-gray-500 mb-4">Try adjusting your filters or clear them to see all expenses.</p>
+                    <a href="{{ url_for('expenses') }}" class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                        Clear Filters
+                    </a>
+                {% else %}
+                    <h3 class="text-lg font-medium text-gray-900 mb-1">No expenses yet</h3>
+                    <p class="text-gray-500 mb-4">Start tracking your spending by adding your first expense.</p>
+                    <a href="{{ url_for('add_expense') }}" class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                        Add Your First Expense
+                    </a>
+                {% endif %}
             </div>
         {% endif %}
     </div>
 </div>
+
+<script>
+    const filterToggle = document.getElementById('filter-toggle');
+    const filterPanel = document.getElementById('filter-panel');
+    const filterIcon = document.getElementById('filter-icon');
+
+    filterToggle.addEventListener('click', () => {
+        filterPanel.classList.toggle('hidden');
+        filterIcon.classList.toggle('rotate-180');
+    });
+</script>
 {% endblock %}

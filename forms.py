@@ -28,19 +28,39 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('Email already registered. Please use a different email.')
 
 
+EXPENSE_CATEGORIES = [
+    ('', 'All Categories'),
+    ('food', 'Food & Dining'),
+    ('transport', 'Transportation'),
+    ('utilities', 'Utilities'),
+    ('entertainment', 'Entertainment'),
+    ('shopping', 'Shopping'),
+    ('healthcare', 'Healthcare'),
+    ('education', 'Education'),
+    ('travel', 'Travel'),
+    ('other', 'Other')
+]
+
+
 class ExpenseForm(FlaskForm):
     amount = FloatField('Amount', validators=[DataRequired(), NumberRange(min=0.01, message='Amount must be greater than 0')])
-    category = SelectField('Category', choices=[
-        ('food', 'Food & Dining'),
-        ('transport', 'Transportation'),
-        ('utilities', 'Utilities'),
-        ('entertainment', 'Entertainment'),
-        ('shopping', 'Shopping'),
-        ('healthcare', 'Healthcare'),
-        ('education', 'Education'),
-        ('travel', 'Travel'),
-        ('other', 'Other')
-    ], validators=[DataRequired()])
+    category = SelectField('Category', choices=EXPENSE_CATEGORIES[1:], validators=[DataRequired()])
     date = DateField('Date', validators=[DataRequired()])
     description = TextAreaField('Description (Optional)', validators=[Length(max=255)])
     submit = SubmitField('Save Expense')
+
+
+class ExpenseFilterForm(FlaskForm):
+    category = SelectField('Category', choices=EXPENSE_CATEGORIES)
+    date_from = DateField('From Date', validators=[])
+    date_to = DateField('To Date', validators=[])
+    min_amount = FloatField('Min Amount', validators=[])
+    max_amount = FloatField('Max Amount', validators=[])
+    search = StringField('Search Description')
+    submit = SubmitField('Filter')
+
+
+class BudgetForm(FlaskForm):
+    category = SelectField('Category', choices=EXPENSE_CATEGORIES[1:], validators=[DataRequired()])
+    monthly_limit = FloatField('Monthly Limit ($)', validators=[DataRequired(), NumberRange(min=0.01, message='Limit must be greater than 0')])
+    submit = SubmitField('Save Budget')

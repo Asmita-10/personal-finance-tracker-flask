@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="mb-8">
+        <a href="{{ url_for('budgets') }}" class="inline-flex items-center text-gray-600 hover:text-indigo-600 transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Budgets
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ title }}</h1>
+        
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            
+            <div class="space-y-6">
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    {{ form.category(class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors capitalize") }}
+                    {% for error in form.category.errors %}
+                    <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                
+                <div>
+                    <label for="monthly_limit" class="block text-sm font-medium text-gray-700 mb-2">Monthly Limit ($)</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono">$</span>
+                        {{ form.monthly_limit(class="w-full pl-8 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors font-mono", placeholder="0.00", step="0.01") }}
+                    </div>
+                    {% for error in form.monthly_limit.errors %}
+                    <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                
+                <div class="pt-4">
+                    {{ form.submit(class="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors cursor-pointer") }}
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+        <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div class="text-sm text-blue-700">
+                <p class="font-medium mb-1">About Budgets</p>
+                <p>Set a monthly spending limit for each category. You'll see alerts when you're approaching or exceeding your budget.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

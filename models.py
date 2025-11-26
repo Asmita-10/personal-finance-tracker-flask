@@ -37,3 +37,15 @@ class Expense(db.Model):
     
     def __repr__(self):
         return f'<Expense {self.amount} - {self.category}>'
+
+
+class Budget(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    category = db.Column(db.String(100), nullable=False)
+    monthly_limit = db.Column(db.Float, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    user = db.relationship('User', backref=db.backref('budgets', lazy=True, cascade='all, delete-orphan'))
+    
+    def __repr__(self):
+        return f'<Budget {self.category}: ${self.monthly_limit}>'
