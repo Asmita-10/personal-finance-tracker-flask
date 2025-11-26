@@ -64,3 +64,18 @@ class BudgetForm(FlaskForm):
     category = SelectField('Category', choices=EXPENSE_CATEGORIES[1:], validators=[DataRequired()])
     monthly_limit = FloatField('Monthly Limit ($)', validators=[DataRequired(), NumberRange(min=0.01, message='Limit must be greater than 0')])
     submit = SubmitField('Save Budget')
+
+
+class ReminderForm(FlaskForm):
+    bill_name = StringField('Bill Name', validators=[DataRequired(), Length(min=1, max=100)])
+    due_date = DateField('Due Date', validators=[DataRequired()])
+    amount = FloatField('Amount ($)', validators=[DataRequired(), NumberRange(min=0.01, message='Amount must be greater than 0')])
+    submit = SubmitField('Save Reminder')
+
+
+class GoalForm(FlaskForm):
+    name = StringField('Goal Name', validators=[DataRequired(), Length(min=1, max=100)])
+    target_amount = FloatField('Target Amount ($)', validators=[DataRequired(), NumberRange(min=0.01, message='Amount must be greater than 0')])
+    current_amount = FloatField('Current Amount ($)', validators=[DataRequired(), NumberRange(min=0)])
+    due_date = DateField('Target Date', validators=[DataRequired()])
+    submit = SubmitField('Save Goal')

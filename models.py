@@ -49,3 +49,30 @@ class Budget(db.Model):
     
     def __repr__(self):
         return f'<Budget {self.category}: ${self.monthly_limit}>'
+
+
+class Reminder(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    bill_name = db.Column(db.String(100), nullable=False)
+    due_date = db.Column(db.Date, nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    user = db.relationship('User', backref=db.backref('reminders', lazy=True, cascade='all, delete-orphan'))
+    
+    def __repr__(self):
+        return f'<Reminder {self.bill_name}: ${self.amount}>'
+
+
+class Goal(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    target_amount = db.Column(db.Float, nullable=False)
+    current_amount = db.Column(db.Float, default=0)
+    due_date = db.Column(db.Date, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    user = db.relationship('User', backref=db.backref('goals', lazy=True, cascade='all, delete-orphan'))
+    
+    def __repr__(self):
+        return f'<Goal {self.name}: ${self.current_amount}/${self.target_amount}>'
