@@ -38,4 +38,30 @@ login_manager.login_message_category = "info"
 with app.app_context():
     import models
     import routes
-    db.create_all()
+    
+# app.py (Example)
+# ... your imports (Flask, SQLAlchemy, os, etc.)
+
+# Import the Vercel WSGI handler
+from serverless_wsgi import handle_request
+db = SQLAlchemy()
+app = Flask(__name__)
+# ... your config lines (SECRET_KEY, SQLALCHEMY_DATABASE_URI) ...
+
+# Initialize db and login_manager
+db.init_app(app)
+login_manager.init_app(app)
+# ----------------------------------------------------
+# FINAL LINES for VercEL deployment:
+# If you run locally, use the original app.run() lines
+# If deploying to Vercel, this handles the startup:
+app = VercelWSGI(app) # <--- WRAP YOUR FLASK APP
+
+# You might need to adjust based on how your app is structured
+# but VercelApp handles the WSGI connection.
+def handler(event, context):
+    """Entry point for the serverless function."""
+    from serverless_wsgi import handle_request
+    
+    # We must call the handler function with the Flask application object
+    return handle_request(app, event, context)
