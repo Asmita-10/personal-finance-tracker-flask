@@ -6,62 +6,64 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
+# Correct import for the serverless handler
+from serverless_wsgi import handle_request 
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 class Base(DeclarativeBase):
+    """Base class for all SQLAlchemy models."""
     pass
 
-
+# 1. Initialize Extensions Globally (without passing the app)
 db = SQLAlchemy(model_class=Base)
 login_manager = LoginManager()
 
-app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False 
-app.secret_key = os.environ.get("SESSION_SECRET")
-app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET")
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
+def create_app():
+    """Application factory function to create and configure the Flask app."""
+    
+    app = Flask(__name__)
 
-db.init_app(app)
-login_manager.init_app(app)
-login_manager.login_view = "login"
-login_manager.login_message_category = "info"
+    # 2. APPLICATION CONFIGURATION (Reads Environment Variables)
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False 
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") # Use SECRET_KEY for all Flask security
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+    }
+    
+    # 3. Apply Middleware and Initialize Extensions
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-with app.app_context():
-    import models
+    db.init_app(app)
+    login_manager.init_app(app)
+    
+    login_manager.login_view = "login"
+    login_manager.login_message_category = "info"
+
+    # 4. Import Routes (MUST BE DONE AFTER APP AND EXTENSIONS ARE DEFINED)
+    # This must be a simple import call. routes.py should not execute code that relies on the app context immediately.
     import routes
     
-# app.py (Example)
-# ... your imports (Flask, SQLAlchemy, os, etc.)
+    return app
 
-# Import the Vercel WSGI handler
-from serverless_wsgi import handle_request
-db = SQLAlchemy()
-app = Flask(__name__)
-# ... your config lines (SECRET_KEY, SQLALCHEMY_DATABASE_URI) ...
-
-# Initialize db and login_manager
-db.init_app(app)
-login_manager.init_app(app)
 # ----------------------------------------------------
-# FINAL LINES for VercEL deployment:
-# If you run locally, use the original app.run() lines
-# If deploying to Vercel, this handles the startup:
-app = VercelWSGI(app) # <--- WRAP YOUR FLASK APP
+# SERVERLESS ENTRY POINT SETUP
+# ----------------------------------------------------
 
-# You might need to adjust based on how your app is structured
-# but VercelApp handles the WSGI connection.
+# Create the application instance once at the global level
+app = create_app()
+
+# Delete the incorrect and confusing wrapper
+# app = VercelWSGI(app) <--- DELETE THIS LINE
+
 def handler(event, context):
-    """Entry point for the serverless function."""
-    from serverless_wsgi import handle_request
-    
-    # We must call the handler function with the Flask application object
+    """
+    Primary entry point for the Vercel Serverless Function.
+    The 'serverless_wsgi' package executes the application using this handler.
+    """
+    # Call the imported handle_request function with our Flask app instance
     return handle_request(app, event, context)
