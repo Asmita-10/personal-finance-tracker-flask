@@ -67,3 +67,9 @@ def handler(event, context):
     """
     # Call the imported handle_request function with our Flask app instance
     return handle_request(app, event, context)
+
+with app.app_context():
+    # Safely import the modules
+    import routes
+    import models
+    db.create_all()
