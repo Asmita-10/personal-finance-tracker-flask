@@ -9,3 +9,14 @@ __pycache__/
 .venv/
 .replit
 replit.nix
+
+# Environment variables (contains secrets)
+.env
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Flask-Migrate
+migrations/

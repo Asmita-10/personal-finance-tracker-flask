@@ -66,6 +66,13 @@ class BudgetForm(FlaskForm):
     start_date = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()])
     end_date = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()])
     submit = SubmitField('Set Budget')
+    
+    def validate_end_date(self, end_date):
+        """Validate that end date is after start date."""
+        if self.start_date.data and end_date.data:
+            if end_date.data < self.start_date.data:
+                raise ValidationError('End date must be after start date.')
+
 
 
 class ReminderForm(FlaskForm):
