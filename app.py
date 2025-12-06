@@ -8,8 +8,6 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
-# Correct import for the serverless handler
-from serverless_wsgi import handle_request 
 
 # Load environment variables from .env file
 load_dotenv()
@@ -73,17 +71,9 @@ def create_app():
     
     return app
 
-# ----------------------------------------------------
-# SERVERLESS ENTRY POINT SETUP
-# ----------------------------------------------------
 
-# Create the application instance once at the global level
+# Create the application instance
 app = create_app()
 
-def handler(event, context):
-    """
-    Primary entry point for the Vercel Serverless Function.
-    The 'serverless_wsgi' package executes the application using this handler.
-    """
-    # Call the imported handle_request function with our Flask app instance
-    return handle_request(app, event, context)
+if __name__ == "__main__":
+    app.run(debug=True)
